@@ -1,0 +1,15 @@
+include README.md
+include pyproject.toml
+include setup.py
+include build_backend.py
+include .gitmodules
+recursive-include scripts *.py
+recursive-include tests *.py
+recursive-include src *.py *.typed *.dll *.so *.dylib
+
+graft matrix-rust-sdk
+prune matrix-rust-sdk/.git
+prune matrix-rust-sdk/target
+prune .venv
+prune dist
+prune build

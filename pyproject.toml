@@ -1,0 +1,91 @@
+[build-system]
+requires = ["setuptools>=80", "wheel"]
+build-backend = "build_backend"
+backend-path = ["."]
+
+[project]
+name = "matrix-sdk-python"
+version = "0.18.0"
+description = "Python bindings for matrix-rust-sdk via UniFFI"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+authors = [
+  { name = "Elysia" }
+]
+keywords = ["matrix", "chat", "messaging", "ffi", "uniffi"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX :: Linux",
+  "Operating System :: MacOS",
+  "Topic :: Software Development :: Libraries",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/matrix-org/matrix-rust-sdk"
+Repository = "https://github.com/matrix-org/matrix-rust-sdk"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = true
+zip-safe = false
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+matrix_sdk_python = [
+  "py.typed",
+  "_generated/*.py",
+  "_generated/*.dll",
+  "_generated/*.so",
+  "_generated/*.dylib",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.cibuildwheel]
+build = "cp310-* cp311-* cp312-* cp313-*"
+skip = "*-musllinux_* pp*"
+build-verbosity = 1
+test-command = "pytest {project}/tests/test_smoke.py"
+test-requires = ["pytest"]
+before-build = "python scripts/build_bindings.py --profile dist --clean"
+
+[tool.cibuildwheel.environment]
+PYTHONUTF8 = "1"
+MATRIX_SDK_PYTHON_SKIP_BUILD = "1"
+MATRIX_SDK_PYTHON_RUST_PROFILE = "dist"
+
+[tool.cibuildwheel.linux]
+before-all = "curl -LsSf https://astral.sh/uv/install.sh | sh"
+
+test-environment = { PATH = "$HOME/.local/bin:$PATH" }
+
+[tool.cibuildwheel.macos]
+before-all = "curl -LsSf https://astral.sh/uv/install.sh | sh"
+
+test-environment = { PATH = "$HOME/.local/bin:$PATH" }
+
+[tool.cibuildwheel.windows]
+before-all = "powershell -ExecutionPolicy Bypass -c \"irm https://astral.sh/uv/install.ps1 | iex\""
+
+[dependency-groups]
+dev = [
+  "build>=1.2.2",
+  "cibuildwheel>=2.23.3",
+  "furo>=2024.8.6",
+  "pytest>=8.3.5",
+  "sphinx>=8.1.3",
+  "twine>=6.1.0",
+]

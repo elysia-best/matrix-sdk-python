@@ -1,0 +1,143 @@
+name: Python bindings
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: ["main", "master"]
+    tags: ["v*"]
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHONUTF8: "1"
+  CIBW_BUILD_VERBOSITY: "1"
+
+jobs:
+  lint-and-smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: matrix-rust-sdk
+
+      - name: Sync dependencies
+        run: uv sync
+
+      - name: Generate bindings
+        run: uv run python scripts/build_bindings.py --profile reldev --clean
+
+      - name: Run smoke tests
+        run: uv run pytest tests/test_smoke.py
+
+  build-wheels:
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-14]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: matrix-rust-sdk
+
+      - name: Sync dependencies
+        run: uv sync
+
+      - name: Build wheels
+        run: uv run cibuildwheel --output-dir dist
+
+      - name: Upload wheel artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}
+          path: dist/*
+
+  publish-pypi:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build-wheels
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Download wheel artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist-artifacts
+
+      - name: Collect dist files
+        shell: bash
+        run: |
+          mkdir -p dist
+          find dist-artifacts -type f \( -name '*.whl' -o -name '*.tar.gz' \) -exec cp '{}' dist/ \;
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist
+
+  publish-github-release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build-wheels
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download wheel artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist-artifacts
+
+      - name: Collect dist files
+        shell: bash
+        run: |
+          mkdir -p dist
+          find dist-artifacts -type f \( -name '*.whl' -o -name '*.tar.gz' \) -exec cp '{}' dist/ \;
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
