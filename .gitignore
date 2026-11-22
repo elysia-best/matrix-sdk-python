@@ -15,7 +15,9 @@ src/matrix_sdk_python/_generated/matrix_sdk_common.py
 src/matrix_sdk_python/_generated/matrix_sdk_contentscanner.py
 src/matrix_sdk_python/_generated/matrix_sdk_crypto.py
 src/matrix_sdk_python/_generated/matrix_sdk_ffi.py
+src/matrix_sdk_python/_generated/matrix_sdk_sqlite.py
 src/matrix_sdk_python/_generated/matrix_sdk_ui.py
+src/matrix_sdk_python/_generated/ruma_events.py
 docs/_generated_api
 docs/_generated
 docs/_build

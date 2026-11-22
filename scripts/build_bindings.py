@@ -17,7 +17,9 @@ GENERATED_MODULES = [
     "matrix_sdk_contentscanner.py",
     "matrix_sdk_crypto.py",
     "matrix_sdk_ffi.py",
+    "matrix_sdk_sqlite.py",
     "matrix_sdk_ui.py",
+    "ruma_events.py",
 ]
 NATIVE_LIB_PATTERNS = [
     "matrix_sdk_ffi.dll",
